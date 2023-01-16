@@ -18,7 +18,7 @@
         <table class="table table-hover w-100">
           <thead>
           <tr>
-            <th>Chat</th>
+            <th>Gebruiker</th>
             <th>Actie</th>
           </tr>
           </thead>
