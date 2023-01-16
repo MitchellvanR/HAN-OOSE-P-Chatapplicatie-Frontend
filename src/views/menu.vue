@@ -11,7 +11,7 @@
     </div>
     <div class="row">
       <div class="col lg-8">
-        <p class="display-4">Gebruiker Menu</p>
+        <p class="display-4">Menu</p>
         <small><i class="fa fa-exclamation-circle" aria-hidden="true"></i> Let op! Dit scherm wordt alleen gebruikt voor testen en het geven van demo's.</small>
       </div>
       <hr>

@@ -1,6 +1,6 @@
 <template>
   <div class="container background">
-    <p class="display-4">Menu</p>
+    <p class="display-4">Home</p>
     <small><i class="fa fa-exclamation-circle" aria-hidden="true"></i> Let op! Dit scherm wordt alleen gebruikt voor testen en het geven van demo's.</small>
     <hr class="mb-5">
     <div class="row">
