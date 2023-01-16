@@ -51,7 +51,7 @@
 
 <script>
 export default {
-  name: 'OpenChat',
+  name: 'chatPage',
   cryptoKey: {},
   data() {
     return {

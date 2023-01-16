@@ -10,7 +10,7 @@
         <button type="button" @click="toggleView('addAnnouncement')" class="btn btn-outline-primary float-right">Aankondiging sturen</button>
 
         <div class="input_style w-100 form-popup mt-2 mb-2" id="addAnnouncement">
-          <b>Voeg een aankondiging toe</b>
+          <strong>Voeg een aankondiging toe</strong>
           <form id="announcement-form">
             <div class="form-group">
               <label for="announcement" >Aankondiging:</label><br>
@@ -52,7 +52,7 @@
 
 <script>
 export default {
-  name: "openAdministration",
+  name: "administrationPage",
   data() {
     return {
       array: [],
