@@ -4,7 +4,6 @@
     <p class="display-4">Menu</p>
     <small><i class="fa fa-exclamation-circle" aria-hidden="true"></i> Let op! Dit scherm wordt alleen gebruikt voor testen en het geven van demo's.</small>
     <hr class="mb-5">
-
     <div class="row">
       <div class="col-lg-6">
         <form id="secret-form">
@@ -21,39 +20,25 @@
           <tr>
             <th>Chat</th>
             <th>Actie</th>
-            <th>Tijdelijke oplossing</th>
           </tr>
           </thead>
           <tbody>
-<!--          <tr v-for="userId in users" :key="userId">-->
-<!--            <td>{{userId}}</td>-->
-<!--            <td>-->
-<!--              <router-link to="/chat" custom v-slot="{ navigate }">-->
-<!--                <button @click="navigate" role="link" class="btn" v-on:click="setUserId(userId)"><i class="fa fa-sign-in" aria-hidden="true"></i></button>-->
-<!--              </router-link>-->
-<!--            </td>-->
-<!--            <td></td>-->
-<!--          </tr>-->
-          <tr>
-            <td>1</td>
-            <td></td>
-            <td>
-              <router-link to="/chatlist" custom v-slot="{ navigate }"><button @click="navigate" id="user1" role="link" class="btn btn-outline-primary" v-on:click="setUserId(1)">Gebruiker #1 (Mitch)</button></router-link>
-            </td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td></td>
-            <td>
-              <router-link to="/chatlist" custom v-slot="{ navigate }"><button @click="navigate" id="user2" role="link" class="btn btn-outline-primary" v-on:click="setUserId(2)">Gebruiker #2 (Jaap)</button></router-link>
-            </td>
-          </tr>
+            <tr v-for="user in users" :key="user.id">
+              <td>{{user.id}}</td>
+              <td>
+                <form id="user" action="http://localhost:8081/chatList">
+                  <button id="user" role="link" class="btn" v-on:click="setUserId(user.id)"><i class="fa fa-sign-in" aria-hidden="true"></i></button>
+                </form>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
       <div class="col-lg-6">
         <h4>Administrator scherm</h4>
-        <router-link to="/chatlist" custom v-slot="{ navigate }"><button @click="navigate" id="administrator" role="link" class="btn btn-primary" v-on:click="setUserId('Admin')"><i class="fa fa-sign-out" aria-hidden="true"></i>  Administrator</button></router-link>
+        <form id="user" action="http://localhost:8081/administration">
+          <button id="administrator" role="link" class="btn btn-primary" v-on:click="setUserId('Admin')"><i class="fa fa-sign-out" aria-hidden="true"></i>  Administrator</button>
+        </form>
       </div>
     </div>
   </div>
@@ -73,8 +58,8 @@ export default {
   },
   methods: {
     getAllUsers: function(){
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/user/getAllUsers').then(data => {
-        this.users.push(...data.list);
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/users').then(data => {
+        this.users.push(...data.users);
       });
     },
     setUserId: function (userId) {

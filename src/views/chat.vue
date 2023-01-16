@@ -1,47 +1,54 @@
 <template>
-  <div id="frame" class="mt-3">
-    <div class="content">
-      <div class="contact-profile row mb-2">
-        <div class="col-lg-12">
-          <strong>Naam ontvanger</strong>
-        </div>
-      </div>
-      <div class="messages" id="messages">
-        <ul v-for="(message, index) in array" :key="index">
-          <li v-if="message.senderId === userId" class="replies mb-3">
-            <small class="float-right margin-right-5px">{{message.time}}</small>
-            <br>
-            <p>{{message.message}}</p>
-          </li>
-          <li v-else class="sent mb-3">
-            <small class="margin-left-5px">{{message.time}}</small>
-            <br>
-            <p>{{message.message}}</p>
-          </li>
-        </ul>
-      </div>
-      <div class="message-input border-top border-dark p-2">
-        <div class="row mb-2">
-          <form id="sendMessageForm" class="wrap">
-            <input type="text" id="message" placeholder="Stuur een bericht..." />
-            <button class="btn" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
-            <button class="btn" type="button" @click="toggleForm()"><i class="fa fa-users" aria-hidden="true"></i></button>
-          </form>
-        </div>
-        <div class="row">
-          <div class="form-popup" id="addUserToCurrentChat">
-            <form id="addUserForm" class="row">
-              <div class="col-lg-12">
-                <input type="text" id="userId" placeholder="Gebruiker toevoegen (userId)">
-                <button class="btn" type="button" @click="addUserToCurrentChat()"><i class="fa fa-check" aria-hidden="true"></i></button>
+  <div class="row mt-3">
+    <div class="col lg-2"></div>
+    <div class="col lg-8">
+      <div id="frame">
+        <div class="content">
+          <div class="contact-profile row mb-2">
+            <div class="col-lg-12">
+              <strong>Naam ontvanger</strong>
+            </div>
+          </div>
+          <div class="messages" id="messages">
+            <ul v-for="(message, index) in array" :key="index">
+              <li v-if="message.senderId === userId" class="replies mb-3">
+                <small class="float-right margin-right-5px">{{message.time}}</small>
+                <br>
+                <p>{{message.message}}</p>
+              </li>
+              <li v-else class="sent mb-3">
+                <small class="margin-left-5px">{{message.time}}</small>
+                <br>
+                <p>{{message.message}}</p>
+              </li>
+            </ul>
+          </div>
+          <div class="message-input border-top border-dark p-2">
+            <div class="row mb-2">
+              <form id="sendMessageForm" class="wrap">
+                <input type="text" id="message" placeholder="Stuur een bericht..." />
+                <button class="btn" type="submit"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
+                <button class="btn" id="groupChatButton" type="button" @click="toggleView('addUserToCurrentChat')"><i class="fa fa-users" aria-hidden="true"></i></button>
+              </form>
+            </div>
+            <div class="row">
+              <div class="form-popup" id="addUserToCurrentChat">
+                <form id="addUserForm" class="row">
+                  <div class="col-lg-12">
+                    <input type="text" id="userId" placeholder="Gebruiker toevoegen (userId)">
+                    <button class="btn" type="button" @click="addUserToCurrentChat()"><i class="fa fa-check" aria-hidden="true"></i></button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
     </div>
+    <div class="col lg-2"></div>
   </div>
 </template>
+
 <script>
 export default {
   name: 'OpenChat',
@@ -55,6 +62,7 @@ export default {
     }
   },
   mounted() {
+    this.getChatType(sessionStorage.getItem('chatId'));
     this.getChatLog();
     this.delay(30);
   },
@@ -63,9 +71,15 @@ export default {
       this.webSocket.close();
       this.webSocket = null;
     }
+    sessionStorage.setItem("isHelpline", "false");
   },
   methods: {
     /* global BigInt */
+    getChatType: function (chatId) {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
+        sessionStorage.setItem('chatType', responseData.chatType);
+      })
+    },
     formulatePrivateKey: function (otherPublicKey, secret) {
       return (BigInt(otherPublicKey) ** BigInt(secret)) % BigInt("32317006071311007300338913926423828248817941241140239112842009751400741706634354222619689417363569347117901737909704191754605873209195028853758986185622153212175412514901774520270235796078236248884246189477587641105928646099411723245426622522193230540919037680524235519125679715870117001058055877651038861847280257976054903569732561526167081339361799541336476559160368317896729073178384589680639671900977202194168647225871031411336429319536193471636533209717077448227988588565369208645296636077250268955505928362751121174096972998068410554359584866583291642136218231078990999448652468262416972035911852507045361090559");
     },
@@ -75,7 +89,7 @@ export default {
     importCryptoKey: async function (value) {
       let key = this.formulatePrivateKey(value, this.getSecret());
       let bufferOne = new TextEncoder().encode(key);
-      let bufferTwo = new Uint8Array(32)
+      let bufferTwo = new Uint8Array(32);
       for (let i = 0; i < bufferTwo.length; i++) {
         bufferTwo[i] = bufferOne[i];
       }
@@ -98,7 +112,7 @@ export default {
       return new TextDecoder().decode(message);
     },
     encrypt: async function (message) {
-      this.getOtherPublicKey()
+      this.getOtherPublicKey();
       await this.delay(30);
       await this.importCryptoKey(this.otherPublicKey);
       let iv = this.generateIv();
@@ -140,7 +154,7 @@ export default {
           key,
           messageArray
       ).catch((messy) => {
-        console.log("this mess: " + messy);
+        console.log("An error has occurred with the encryption: " + messy);
       });
       return this.decodeMessage(encodedMessage);
     },
@@ -157,7 +171,8 @@ export default {
         setTimeout(resolve, milliseconds);
       });
     },
-    getChatLog: function () {
+    getChatLog: async function () {
+      this.helpLineRemoveGroupChats()
       this.runWebSocket();
       this.validateSession();
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
@@ -170,18 +185,27 @@ export default {
         this.array.push(...responseData.messages);
       }).then(() => this.scrollToBottom());
     },
-    toggleForm: function () {
-      document.getElementById("addUserToCurrentChat").classList.toggle("form-popup");
+    toggleView: function (id) {
+      document.getElementById(id).classList.toggle("form-popup");
+    },
+    helpLineRemoveGroupChats: function (){
+      if (sessionStorage.getItem("isHelpline") === "true"){
+        document.getElementById('groupChatButton').classList.add("display-none");
+      }
     },
     runWebSocket: function () {
       this.webSocket = new WebSocket('ws://localhost:443');
 
       this.webSocket.addEventListener('message', async data => {
-        this.getOtherPublicKey()
-        await this.delay(30);
-        await this.importCryptoKey(this.otherPublicKey);
-        let dataSet = await this.websocketDecrypt(await data.data.text().then())
-        dataSet.text().then(this.showMessage);
+        if (sessionStorage.getItem('chatType') === "groep") {
+          data.data.text().then(this.showMessage);
+        } else {
+          this.getOtherPublicKey();
+          await this.delay(30);
+          await this.importCryptoKey(this.otherPublicKey);
+          let dataSet = await this.websocketDecrypt(await data.data.text().then())
+          dataSet.text().then(this.showMessage);
+        }
       });
 
       document.getElementById('sendMessageForm').onsubmit = data => {
@@ -205,10 +229,10 @@ export default {
       const input = document.getElementById('userId');
       input.classList.remove("border", "border-danger");
 
-      if (input.value === "" || isNaN(input.value)){
+      if (input.value === "" || isNaN(input.value) || input.value !== this.userId){
         input.classList.add("border", "border-danger");
       } else {
-        this.addUserToChat(input.value, this.chatId);
+        this.addUserToChat(input, input.value, this.chatId);
         input.value = '';
       }
     },
@@ -217,8 +241,14 @@ export default {
         this.otherPublicKey = responseData.publicKey;
       });
     },
-    addUserToChat: function (userId, chatId){
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + chatId + '/addUser/' + userId).then(res => {return res})
+    addUserToChat: function (input, userId, chatId){
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + userId).then(responseData => {
+        if (responseData.result === true){
+          this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + chatId + '/addUser/' + userId).then(res => {return res})
+        } else {
+          input.classList.add("border", "border-danger");
+        }
+      });
     },
     isInputEmpty: function() {
       return document.getElementById('message').value === "";
@@ -228,6 +258,7 @@ export default {
       let encryptedMessageBuffer = await this.encrypt(message);
       let encryptedMessage = new Uint8Array(encryptedMessageBuffer);
       let messageAndIv = encryptedMessage.toString() + "^" + sessionStorage.getItem("sendIv").toString();
+      let groupMessageAndIv = message + "^" + sessionStorage.getItem('sendIv').toString();
 
       this.array.push({
         message: message,
@@ -235,8 +266,13 @@ export default {
         time: this.getCurrentTime()
       });
 
-      this.sendMessage(messageAndIv);
-      webSocket.send(messageAndIv);
+      if (sessionStorage.getItem('chatType') === "groep") {
+        this.sendMessage(groupMessageAndIv);
+        webSocket.send(groupMessageAndIv);
+      } else {
+        this.sendMessage(messageAndIv);
+        webSocket.send(messageAndIv);
+      }
 
       document.getElementById('message').classList.remove("border", "border-danger");
       document.getElementById('message').value = '';
@@ -301,7 +337,7 @@ export default {
   border: 3px solid #e6eaea;
 }
 
-.form-popup {
+.display-none {
   display: none;
 }
 </style>
