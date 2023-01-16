@@ -77,7 +77,7 @@ export default {
     /* global BigInt */
     getChatType: function (chatId) {
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
-        sessionStorage.setItem('chatType', responseData.chatType);
+        this.chatType = responseData.chatType;
       })
     },
     formulatePrivateKey: function (otherPublicKey, secret) {
@@ -146,67 +146,69 @@ export default {
         let messageArray = this.cleanForDecrypt(message);
         let ivArray = this.cleanForDecrypt(iv);
 
-        let encodedMessage = await window.crypto.subtle.decrypt(
-            {
-              name: "AES-CBC",
-              iv: ivArray,
-            },
-            key,
-            messageArray
-        ).catch((messy) => {
-          console.log("An error has occurred with the encryption: " + messy);
-        });
-        return this.decodeMessage(encodedMessage);
-      },
-      websocketDecrypt: async function (data) {
-        let messageAndIvArray = data.split("^");
-        let message = messageAndIvArray[0];
-        let iv = messageAndIvArray[1];
-        let correctData = await this.decrypt(this.cryptoKey, message, iv);
-        let dataArray = [correctData];
-        return new Blob(dataArray);
-      },
-      delay: function (milliseconds) {
-        return new Promise(resolve => {
-          setTimeout(resolve, milliseconds);
-        });
-      },
-      getChatLog: async function () {
-        this.helpLineRemoveGroupChats();
-        this.runWebSocket();
-        this.validateSession();
-        this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
-          for (let message of responseData.messages) {
-            this.getOtherPublicKey();
+      let encodedMessage = await window.crypto.subtle.decrypt(
+          {
+            name: "AES-CBC",
+            iv: ivArray,
+          },
+          key,
+          messageArray
+      ).catch((messy) => {
+        console.log("An error has occurred with the encryption: " + messy);
+      });
+      return this.decodeMessage(encodedMessage);
+    },
+    websocketDecrypt: async function (data) {
+      let messageAndIvArray = data.split("^");
+      let message = messageAndIvArray[0];
+      let iv = messageAndIvArray[1];
+      let correctData = await this.decrypt(this.cryptoKey, message, iv)
+      let dataArray = [correctData];
+      return new Blob(dataArray);
+    },
+    delay: function (milliseconds) {
+      return new Promise(resolve => {
+        setTimeout(resolve, milliseconds);
+      });
+    },
+    getChatLog: async function () {
+      this.helpLineRemoveGroupChats()
+      this.runWebSocket();
+      this.validateSession();
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
+        for (let message of responseData.messages) {
+          if (this.chatType !== "group") {
+            this.getOtherPublicKey()
             await this.delay(30);
             await this.importCryptoKey(this.otherPublicKey);
             message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
           }
-          this.array.push(...responseData.messages);
-        }).then(() => this.scrollToBottom());
-      },
-      toggleView: function (id) {
-        document.getElementById(id).classList.toggle("display-none");
-      },
-      helpLineRemoveGroupChats: function (){
-        if (sessionStorage.getItem("isHelpline") === "true"){
-          document.getElementById('groupChatButton').classList.add("display-none");
         }
-      },
-      runWebSocket: function () {
-        this.webSocket = new WebSocket('ws://localhost:443');
+        this.array.push(...responseData.messages);
+      }).then(() => this.scrollToBottom());
+    },
+    toggleView: function (id) {
+      document.getElementById(id).classList.toggle("form-popup");
+    },
+    helpLineRemoveGroupChats: function (){
+      if (sessionStorage.getItem("isHelpline") === "true"){
+        document.getElementById('groupChatButton').classList.add("display-none");
+      }
+    },
+    runWebSocket: function () {
+      this.webSocket = new WebSocket('ws://localhost:443');
 
-        this.webSocket.addEventListener('message', async data => {
-          if (sessionStorage.getItem('chatType') === "groep") {
-            data.data.text().then(this.showMessage);
-          } else {
-            this.getOtherPublicKey();
-            await this.delay(30);
-            await this.importCryptoKey(this.otherPublicKey);
-            let dataSet = await this.websocketDecrypt(await data.data.text().then());
-            dataSet.text().then(this.showMessage);
-          }
-        });
+      this.webSocket.addEventListener('message', async data => {
+        if (this.chatType === "group") {
+          data.data.text().then(this.showMessage);
+        } else {
+          this.getOtherPublicKey();
+          await this.delay(30);
+          await this.importCryptoKey(this.otherPublicKey);
+          let dataSet = await this.websocketDecrypt(await data.data.text().then())
+          dataSet.text().then(this.showMessage);
+        }
+      });
 
         document.getElementById('sendMessageForm').onsubmit = data => {
           const input = document.getElementById('message');
@@ -229,50 +231,50 @@ export default {
         const input = document.getElementById('userId');
         input.classList.remove("border", "border-danger");
 
-        if (input.value === "" || isNaN(input.value) || input.value !== this.userId){
+      if (input.value === "" || isNaN(input.value) || input.value === this.userId){
+        input.classList.add("border", "border-danger");
+      } else {
+        this.addUserToChat(input, input.value, this.chatId);
+        input.value = '';
+      }
+    },
+    getOtherPublicKey: function (){
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/security/' + this.userId + '/getOtherKey/' + this.chatId).then(responseData => {
+        this.otherPublicKey = responseData.publicKey;
+      });
+    },
+    addUserToChat: function (input, userId, chatId){
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + userId).then(responseData => {
+        if (responseData.result === true){
+          this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + chatId + '/addUser/' + userId).then(res => {return res})
+        } else {
           input.classList.add("border", "border-danger");
-        } else {
-          this.addUserToChat(input, input.value, this.chatId);
-          input.value = '';
         }
-      },
-      getOtherPublicKey: function (){
-        this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/security/' + this.userId + '/getOtherKey/' + this.chatId).then(responseData => {
-          this.otherPublicKey = responseData.publicKey;
-        });
-      },
-      addUserToChat: function (input, userId, chatId){
-        this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + userId).then(responseData => {
-          if (responseData.result === true){
-            this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + chatId + '/addUser/' + userId).then(res => {return res})
-          } else {
-            input.classList.add("border", "border-danger");
-          }
-        });
-      },
-      isInputEmpty: function() {
-        return document.getElementById('message').value === "";
-      },
-      handleMessage: async function(webSocket) {
-        let message = document.getElementById('message').value;
-        let encryptedMessageBuffer = await this.encrypt(message);
-        let encryptedMessage = new Uint8Array(encryptedMessageBuffer);
-        let messageAndIv = encryptedMessage.toString() + "^" + sessionStorage.getItem("sendIv").toString();
-        let groupMessageAndIv = message + "^" + sessionStorage.getItem('sendIv').toString();
+      });
+    },
+    isInputEmpty: function() {
+      return document.getElementById('message').value === "";
+    },
+    handleMessage: async function(webSocket) {
+      let message = document.getElementById('message').value;
+      let encryptedMessageBuffer = await this.encrypt(message);
+      let encryptedMessage = new Uint8Array(encryptedMessageBuffer);
+      let messageAndIv = encryptedMessage.toString() + "^" + sessionStorage.getItem("sendIv").toString();
+      let groupMessageAndIv = message + "^" + sessionStorage.getItem('sendIv').toString();
 
-        this.array.push({
-          message: message,
-          senderId: this.userId,
-          time: this.getCurrentTime()
-        });
+      this.array.push({
+        message: message,
+        senderId: this.userId,
+        time: this.getCurrentTime()
+      });
 
-        if (sessionStorage.getItem('chatType') === "groep") {
-          this.sendMessage(groupMessageAndIv);
-          webSocket.send(groupMessageAndIv);
-        } else {
-          this.sendMessage(messageAndIv);
-          webSocket.send(messageAndIv);
-        }
+      if (this.chatType === "group") {
+        this.sendMessage(groupMessageAndIv);
+        webSocket.send(message);
+      } else {
+        this.sendMessage(messageAndIv);
+        webSocket.send(messageAndIv);
+      }
 
       document.getElementById('message').classList.remove("border", "border-danger");
       document.getElementById('message').value = '';
