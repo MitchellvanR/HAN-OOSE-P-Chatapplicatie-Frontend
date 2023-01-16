@@ -9,7 +9,7 @@
       <div v-if="showAnnouncementMaker()" class="position-relative">
         <button type="button" @click="toggleView('addAnnouncement')" class="btn btn-outline-primary float-right">Aankondiging sturen</button>
 
-        <div class="input_style w-100 form-popup mt-2 mb-2" id="addAnnouncement">
+        <div class="input_style w-100 display-none mt-2 mb-2" id="addAnnouncement">
           <strong>Voeg een aankondiging toe</strong>
           <form id="announcement-form">
             <div class="form-group">
@@ -52,7 +52,7 @@
 
 <script>
 export default {
-  name: "administrationPage",
+  name: "adminPage",
   data() {
     return {
       array: [],
@@ -85,7 +85,7 @@ export default {
       });
     },
     toggleView: function (id) {
-      document.getElementById(id).classList.toggle("form-popup");
+      document.getElementById(id).classList.toggle("display-none");
     },
     saveAnnouncement: function (announcement, endDate){
       this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();})
@@ -122,7 +122,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>

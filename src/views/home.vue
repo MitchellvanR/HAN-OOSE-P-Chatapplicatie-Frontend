@@ -1,5 +1,4 @@
 <template>
-
   <div class="container background">
     <p class="display-4">Menu</p>
     <small><i class="fa fa-exclamation-circle" aria-hidden="true"></i> Let op! Dit scherm wordt alleen gebruikt voor testen en het geven van demo's.</small>
@@ -95,9 +94,3 @@ export default {
   }
 }
 </script>
-
-<style>
-  body {
-    background: #ebebeb;
-  }
-</style>

@@ -26,8 +26,8 @@ const routes = [
     component: Menu
   },
   {
-    path: '/administration',
-    name: 'administrationPage',
+    path: '/admin',
+    name: 'adminPage',
     component: Admin
   }
 ]
