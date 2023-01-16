@@ -1,32 +1,34 @@
+//General Imports
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import UserMenu from '../views/menu.vue'
-import OpenChat from '../views/chat.vue'
-import ChatList from '@/views/chatList.vue'
-import Administration from '../views/administration.vue'
+//Page Imports
+import Chat from '../views/chat.vue'
+import Admin from '../views/admin.vue'
+import Menu from "@/views/menu";
+import Home from "@/views/home";
 
 Vue.use(VueRouter)
 
 const routes = [
   {
     path: '/',
-    name: 'UserMenu',
-    component: UserMenu,
+    name: 'homePage',
+    component: Home,
   },
   {
     path: '/chat',
-    name: 'OpenChat',
-    component: OpenChat
+    name: 'chatPage',
+    component: Chat
   },
   {
-    path: '/chatList',
-    name: 'openChatList',
-    component: ChatList
+    path: '/menu',
+    name: 'menuPage',
+    component: Menu
   },
   {
-    path: '/administration',
-    name: 'openAdministration',
-    component: Administration
+    path: '/admin',
+    name: 'adminPage',
+    component: Admin
   }
 ]
 

@@ -1,4 +1,4 @@
-import {createLocalVue, mount, shallowMount} from '@vue/test-utils';
+import {createLocalVue, shallowMount} from '@vue/test-utils';
 import chat from '@/views/chat';
 
 const localVue = createLocalVue()
@@ -16,11 +16,11 @@ describe('chat.vue', () => {
             },
             localVue
         })
-    };
+    }
 
-    it('is called OpenChat', () => {
+    it('is called chatPage', () => {
         setWrapper();
-        expect(wrapper.name()).toEqual('OpenChat');
+        expect(wrapper.name()).toEqual('chatPage');
     });
 
     it('calls getChatLog on mount', () => {

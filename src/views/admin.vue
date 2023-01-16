@@ -8,9 +8,8 @@
     <div class="row">
       <div v-if="showAnnouncementMaker()" class="position-relative">
         <button type="button" @click="toggleView('addAnnouncement')" class="btn btn-outline-primary float-right">Aankondiging sturen</button>
-
-        <div class="input_style w-100 form-popup mt-2 mb-2" id="addAnnouncement">
-          <b>Voeg een aankondiging toe</b>
+        <div class="input_style w-100 display-none mt-2 mb-2" id="addAnnouncement">
+          <strong>Voeg een aankondiging toe</strong>
           <form id="announcement-form">
             <div class="form-group">
               <label for="announcement" >Aankondiging:</label><br>
@@ -52,12 +51,13 @@
 
 <script>
 export default {
-  name: "openAdministration",
+  name: "adminPage",
   data() {
     return {
       array: [],
       announcement: "",
       endDate:"",
+      userId: sessionStorage.getItem('userId')
     }
   },
   mounted() {
@@ -69,9 +69,9 @@ export default {
     savePublicKey: function (){
       let secret = sessionStorage.getItem('secret')
       let publicKey = this.formulatePublicKey(secret).toString();
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/security/' + sessionStorage.getItem('userId') + '/' + String(publicKey)).then(responseData => {
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/security/' + this.userId + '/' + String(publicKey)).then(responseData => {
         let keysMatch = responseData.keysMatch;
-        if (!keysMatch || sessionStorage.getItem('userId') !== 'Admin'){
+        if (!keysMatch || this.userId !== 'Admin'){
           history.back();
         }
       })
@@ -85,13 +85,13 @@ export default {
       });
     },
     toggleView: function (id) {
-      document.getElementById(id).classList.toggle("form-popup");
+      document.getElementById(id).classList.toggle("display-none");
     },
     saveAnnouncement: function (announcement, endDate){
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();})
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();});
     },
     showAnnouncementMaker: function (){
-      return sessionStorage.getItem("userId") === "Admin";
+      return this.userId === "Admin";
     },
     setChatId: function (chatId){
       this.setHelpline();
@@ -122,7 +122,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>
