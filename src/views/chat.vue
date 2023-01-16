@@ -32,7 +32,7 @@
               </form>
             </div>
             <div class="row">
-              <div class="form-popup" id="addUserToCurrentChat">
+              <div class="display-none" id="addUserToCurrentChat">
                 <form id="addUserForm" class="row">
                   <div class="col-lg-12">
                     <input type="text" id="userId" placeholder="Gebruiker toevoegen (userId)">
@@ -59,10 +59,12 @@ export default {
       otherPublicKey: '',
       userId: sessionStorage.getItem('userId'),
       chatId: sessionStorage.getItem('chatId'),
+      usersInChat: sessionStorage.getItem('usersInChat')
     }
   },
   mounted() {
-    this.getChatType(this.chatId);
+    this.getChatUsers();
+    this.getChatType();
     this.getChatLog();
     this.delay(30);
   },
@@ -75,8 +77,8 @@ export default {
   },
   methods: {
     /* global BigInt */
-    getChatType: function (chatId) {
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
+    getChatType: function () {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + sessionStorage.getItem('chatId')).then(responseData => {
         this.chatType = responseData.chatType;
       })
     },
@@ -171,11 +173,21 @@ export default {
         setTimeout(resolve, milliseconds);
       });
     },
+    getChatUsers: function () {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/users/' + this.chatId).then(res => {
+        let usersInChat = []
+        for (let i = 0; i < res.users.length; i++) {
+          usersInChat.push(res.users[i].id);
+        }
+        sessionStorage.setItem('usersInChat', usersInChat);
+        this.usersInChat = usersInChat;
+        this.runWebSocket();
+      })
+    },
     getChatLog: async function () {
       this.helpLineRemoveGroupChats()
-      this.runWebSocket();
       this.validateSession();
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + sessionStorage.getItem('chatId')).then(async responseData => {
         for (let message of responseData.messages) {
           if (this.chatType !== "group") {
             this.getOtherPublicKey()
@@ -188,7 +200,7 @@ export default {
       }).then(() => this.scrollToBottom());
     },
     toggleView: function (id) {
-      document.getElementById(id).classList.toggle("form-popup");
+      document.getElementById(id).classList.toggle("display-none");
     },
     helpLineRemoveGroupChats: function (){
       if (sessionStorage.getItem("isHelpline") === "true"){
@@ -196,7 +208,7 @@ export default {
       }
     },
     runWebSocket: function () {
-      this.webSocket = new WebSocket('ws://localhost:443');
+      this.webSocket = new WebSocket('ws://localhost:443/?id=' + this.userId + '&chatId=' + this.chatId + '&users=' + this.usersInChat);
 
       this.webSocket.addEventListener('message', async data => {
         if (this.chatType === "group") {
@@ -231,12 +243,12 @@ export default {
         const input = document.getElementById('userId');
         input.classList.remove("border", "border-danger");
 
-      if (input.value === "" || isNaN(input.value) || input.value === this.userId){
-        input.classList.add("border", "border-danger");
-      } else {
-        this.addUserToChat(input, input.value, this.chatId);
-        input.value = '';
-      }
+        if (input.value === "" || isNaN(input.value) || input.value === this.userId){
+          input.classList.add("border", "border-danger");
+        } else {
+          this.addUserToChat(input, input.value, this.chatId);
+          input.value = '';
+        }
     },
     getOtherPublicKey: function (){
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/security/' + this.userId + '/getOtherKey/' + this.chatId).then(responseData => {
