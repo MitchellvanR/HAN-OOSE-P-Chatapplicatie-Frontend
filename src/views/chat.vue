@@ -177,10 +177,12 @@ export default {
       this.validateSession();
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
         for (let message of responseData.messages) {
-          this.getOtherPublicKey()
-          await this.delay(30);
-          await this.importCryptoKey(this.otherPublicKey);
-          message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
+          if (sessionStorage.getItem('chatType') !== "group") {
+            this.getOtherPublicKey()
+            await this.delay(30);
+            await this.importCryptoKey(this.otherPublicKey);
+            message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
+          }
         }
         this.array.push(...responseData.messages);
       }).then(() => this.scrollToBottom());
@@ -197,7 +199,7 @@ export default {
       this.webSocket = new WebSocket('ws://localhost:443');
 
       this.webSocket.addEventListener('message', async data => {
-        if (sessionStorage.getItem('chatType') === "groep") {
+        if (sessionStorage.getItem('chatType') === "group") {
           data.data.text().then(this.showMessage);
         } else {
           this.getOtherPublicKey();
@@ -229,7 +231,7 @@ export default {
       const input = document.getElementById('userId');
       input.classList.remove("border", "border-danger");
 
-      if (input.value === "" || isNaN(input.value) || input.value !== this.userId){
+      if (input.value === "" || isNaN(input.value) || input.value === this.userId){
         input.classList.add("border", "border-danger");
       } else {
         this.addUserToChat(input, input.value, this.chatId);
@@ -266,9 +268,9 @@ export default {
         time: this.getCurrentTime()
       });
 
-      if (sessionStorage.getItem('chatType') === "groep") {
+      if (sessionStorage.getItem('chatType') === "group") {
         this.sendMessage(groupMessageAndIv);
-        webSocket.send(groupMessageAndIv);
+        webSocket.send(message);
       } else {
         this.sendMessage(messageAndIv);
         webSocket.send(messageAndIv);
