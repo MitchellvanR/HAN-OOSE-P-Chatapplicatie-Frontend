@@ -8,7 +8,6 @@
     <div class="row">
       <div v-if="showAnnouncementMaker()" class="position-relative">
         <button type="button" @click="toggleView('addAnnouncement')" class="btn btn-outline-primary float-right">Aankondiging sturen</button>
-
         <div class="input_style w-100 display-none mt-2 mb-2" id="addAnnouncement">
           <strong>Voeg een aankondiging toe</strong>
           <form id="announcement-form">
@@ -89,7 +88,7 @@ export default {
       document.getElementById(id).classList.toggle("display-none");
     },
     saveAnnouncement: function (announcement, endDate){
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();})
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();});
     },
     showAnnouncementMaker: function (){
       return this.userId === "Admin";

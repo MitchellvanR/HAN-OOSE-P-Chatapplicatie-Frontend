@@ -162,7 +162,7 @@ export default {
         let messageAndIvArray = data.split("^");
         let message = messageAndIvArray[0];
         let iv = messageAndIvArray[1];
-        let correctData = await this.decrypt(this.cryptoKey, message, iv)
+        let correctData = await this.decrypt(this.cryptoKey, message, iv);
         let dataArray = [correctData];
         return new Blob(dataArray);
       },
@@ -172,12 +172,12 @@ export default {
         });
       },
       getChatLog: async function () {
-        this.helpLineRemoveGroupChats()
+        this.helpLineRemoveGroupChats();
         this.runWebSocket();
         this.validateSession();
         this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
           for (let message of responseData.messages) {
-            this.getOtherPublicKey()
+            this.getOtherPublicKey();
             await this.delay(30);
             await this.importCryptoKey(this.otherPublicKey);
             message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
@@ -203,7 +203,7 @@ export default {
             this.getOtherPublicKey();
             await this.delay(30);
             await this.importCryptoKey(this.otherPublicKey);
-            let dataSet = await this.websocketDecrypt(await data.data.text().then())
+            let dataSet = await this.websocketDecrypt(await data.data.text().then());
             dataSet.text().then(this.showMessage);
           }
         });

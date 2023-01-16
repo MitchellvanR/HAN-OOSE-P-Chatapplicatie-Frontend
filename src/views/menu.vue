@@ -84,7 +84,7 @@ export default {
     this.savePublicKey();
     this.createChat();
     this.getAnnouncements();
-    this.getAllChatsFromUser()
+    this.getAllChatsFromUser();
     this.setHelplineChat();
   },
   methods: {
@@ -102,7 +102,7 @@ export default {
       });
     },
     savePublicKey: function (){
-      let secret = sessionStorage.getItem('secret')
+      let secret = sessionStorage.getItem('secret');
       let publicKey = this.formulatePublicKey(secret).toString();
       this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/security/' + this.userId + '/' + String(publicKey)).then(responseData => {
         let keysMatch = responseData.keysMatch;
@@ -124,7 +124,7 @@ export default {
         if (input.value === "" || isNaN(input.value) || input.value === this.userId){
           input.classList.add("border", "border-danger");
         } else {
-          this.validateUserExists(input, input.value)
+          this.validateUserExists(input, input.value);
           input.value = '';
         }
       }
@@ -132,7 +132,7 @@ export default {
     validateUserExists: function (input, id){
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + id).then(responseData => {
         if (responseData.result === true){
-          this.validateCreatedChatDoesntExist(input, id)
+          this.validateCreatedChatDoesntExist(input, id);
         } else {
           input.classList.add("border", "border-danger");
         }
@@ -152,7 +152,7 @@ export default {
       });
     },
     addChatToDatabase: function (id) {
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/newChat/' + id + '/' + this.userId).then()
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/newChat/' + id + '/' + this.userId).then();
     },
     getAllChatsFromUser: function() {
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/user/' + this.userId).then(responseData => {
@@ -193,7 +193,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-</style>
