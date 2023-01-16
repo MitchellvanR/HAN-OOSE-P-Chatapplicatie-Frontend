@@ -59,10 +59,11 @@ export default {
       otherPublicKey: '',
       userId: sessionStorage.getItem('userId'),
       chatId: sessionStorage.getItem('chatId'),
+      chatType: '',
     }
   },
   mounted() {
-    this.getChatType(sessionStorage.getItem('chatId'));
+    this.getChatType(this.chatId);
     this.getChatLog();
     this.delay(30);
   },
@@ -77,7 +78,7 @@ export default {
     /* global BigInt */
     getChatType: function (chatId) {
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
-        sessionStorage.setItem('chatType', responseData.chatType);
+        this.chatType = responseData.chatType;
       })
     },
     formulatePrivateKey: function (otherPublicKey, secret) {
@@ -177,7 +178,7 @@ export default {
       this.validateSession();
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
         for (let message of responseData.messages) {
-          if (sessionStorage.getItem('chatType') !== "group") {
+          if (this.chatType !== "group") {
             this.getOtherPublicKey()
             await this.delay(30);
             await this.importCryptoKey(this.otherPublicKey);
@@ -199,7 +200,7 @@ export default {
       this.webSocket = new WebSocket('ws://localhost:443');
 
       this.webSocket.addEventListener('message', async data => {
-        if (sessionStorage.getItem('chatType') === "group") {
+        if (this.chatType === "group") {
           data.data.text().then(this.showMessage);
         } else {
           this.getOtherPublicKey();
@@ -268,7 +269,7 @@ export default {
         time: this.getCurrentTime()
       });
 
-      if (sessionStorage.getItem('chatType') === "group") {
+      if (this.chatType === "group") {
         this.sendMessage(groupMessageAndIv);
         webSocket.send(message);
       } else {
