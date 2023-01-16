@@ -51,7 +51,7 @@
 
 <script>
 export default {
-  name: 'OpenChat',
+  name: 'chatPage',
   cryptoKey: {},
   data() {
     return {
@@ -59,7 +59,6 @@ export default {
       otherPublicKey: '',
       userId: sessionStorage.getItem('userId'),
       chatId: sessionStorage.getItem('chatId'),
-      chatType: '',
     }
   },
   mounted() {
@@ -95,57 +94,57 @@ export default {
         bufferTwo[i] = bufferOne[i];
       }
 
-      this.cryptoKey = await window.crypto.subtle.importKey(
-          "raw",
-          bufferTwo,
-          "AES-CBC",
-          false,
-          ["encrypt", "decrypt"]
-      );
-    },
-    generateIv: function () {
-      return window.crypto.getRandomValues(new Uint8Array(16));
-    },
-    encodeMessage: function (message) {
-      return new TextEncoder().encode(message);
-    },
-    decodeMessage: function (message) {
-      return new TextDecoder().decode(message);
-    },
-    encrypt: async function (message) {
-      this.getOtherPublicKey();
-      await this.delay(30);
-      await this.importCryptoKey(this.otherPublicKey);
-      let iv = this.generateIv();
-      sessionStorage.setItem("sendIv", iv.toString());
-      let encodedMessage = this.encodeMessage(message);
-      return window.crypto.subtle.encrypt(
-          {
-            name: "AES-CBC",
-            iv: iv,
-          },
-          this.cryptoKey,
-          encodedMessage
-      );
-    },
-    cleanForDecrypt: function (message) {
-      let cleanMessage = message.replace(/['"]/g, '');
-      if (cleanMessage.charCodeAt(0) === 123) {
-        cleanMessage = cleanMessage.substring(1, cleanMessage.length - 1);
-      }
-      let messageArray = cleanMessage.split(",");
-      for (let i = 0; i < messageArray.length; i++) {
-        messageArray[i] = messageArray[i].replace(String(i) + ":", '');
-      }
-      let correctArray = new Uint8Array(messageArray.length);
-      for (let i = 0; i < correctArray.length; i++) {
-        correctArray[i] = messageArray[i];
-      }
-      return correctArray;
-    },
-    decrypt: async function (key, message, iv) {
-      let messageArray = this.cleanForDecrypt(message);
-      let ivArray = this.cleanForDecrypt(iv);
+        this.cryptoKey = await window.crypto.subtle.importKey(
+            "raw",
+            bufferTwo,
+            "AES-CBC",
+            false,
+            ["encrypt", "decrypt"]
+        );
+      },
+      generateIv: function () {
+        return window.crypto.getRandomValues(new Uint8Array(16));
+      },
+      encodeMessage: function (message) {
+        return new TextEncoder().encode(message);
+      },
+      decodeMessage: function (message) {
+        return new TextDecoder().decode(message);
+      },
+      encrypt: async function (message) {
+        this.getOtherPublicKey();
+        await this.delay(30);
+        await this.importCryptoKey(this.otherPublicKey);
+        let iv = this.generateIv();
+        sessionStorage.setItem("sendIv", iv.toString());
+        let encodedMessage = this.encodeMessage(message);
+        return window.crypto.subtle.encrypt(
+            {
+              name: "AES-CBC",
+              iv: iv,
+            },
+            this.cryptoKey,
+            encodedMessage
+        );
+      },
+      cleanForDecrypt: function (message) {
+        let cleanMessage = message.replace(/['"]/g, '');
+        if (cleanMessage.charCodeAt(0) === 123) {
+          cleanMessage = cleanMessage.substring(1, cleanMessage.length - 1);
+        }
+        let messageArray = cleanMessage.split(",");
+        for (let i = 0; i < messageArray.length; i++) {
+          messageArray[i] = messageArray[i].replace(String(i) + ":", '');
+        }
+        let correctArray = new Uint8Array(messageArray.length);
+        for (let i = 0; i < correctArray.length; i++) {
+          correctArray[i] = messageArray[i];
+        }
+        return correctArray;
+      },
+      decrypt: async function (key, message, iv) {
+        let messageArray = this.cleanForDecrypt(message);
+        let ivArray = this.cleanForDecrypt(iv);
 
       let encodedMessage = await window.crypto.subtle.decrypt(
           {
@@ -211,26 +210,26 @@ export default {
         }
       });
 
-      document.getElementById('sendMessageForm').onsubmit = data => {
-        const input = document.getElementById('message');
-        input.classList.remove("border", "border-danger");
-        data.preventDefault();
+        document.getElementById('sendMessageForm').onsubmit = data => {
+          const input = document.getElementById('message');
+          input.classList.remove("border", "border-danger");
+          data.preventDefault();
 
-        if (this.isInputEmpty()) {
-          return document.getElementById('message').classList.add("border", "border-danger");
+          if (this.isInputEmpty()) {
+            return document.getElementById('message').classList.add("border", "border-danger");
+          }
+          this.handleMessage(this.webSocket);
         }
-        this.handleMessage(this.webSocket);
-      }
-    },
-    showMessage: function (message) {
-        this.array.push({
-          message: message,
-          time: this.getCurrentTime()
-        });
-    },
-    addUserToCurrentChat: function () {
-      const input = document.getElementById('userId');
-      input.classList.remove("border", "border-danger");
+      },
+      showMessage: function (message) {
+          this.array.push({
+            message: message,
+            time: this.getCurrentTime()
+          });
+      },
+      addUserToCurrentChat: function () {
+        const input = document.getElementById('userId');
+        input.classList.remove("border", "border-danger");
 
       if (input.value === "" || isNaN(input.value) || input.value === this.userId){
         input.classList.add("border", "border-danger");
@@ -301,7 +300,7 @@ export default {
       });
     },
     validateSession: function (){
-      if (!sessionStorage.getItem("userId")){
+      if (!this.userId){
         window.location.href = "/";
       }
     },
@@ -318,29 +317,21 @@ export default {
 </script>
 
 <style scoped>
-/* ===== Scrollbar CSS ===== */
 /* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #000000 #e6eaea;
 }
-
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
   width: 16px;
 }
-
 *::-webkit-scrollbar-track {
   background: #e6eaea;
 }
-
 *::-webkit-scrollbar-thumb {
   background-color: #000000;
   border-radius: 10px;
   border: 3px solid #e6eaea;
-}
-
-.display-none {
-  display: none;
 }
 </style>
