@@ -32,7 +32,7 @@
               </form>
             </div>
             <div class="row">
-              <div class="display-none" id="addUserToCurrentChat">
+              <div class="form-popup" id="addUserToCurrentChat">
                 <form id="addUserForm" class="row">
                   <div class="col-lg-12">
                     <input type="text" id="userId" placeholder="Gebruiker toevoegen (userId)">
@@ -50,49 +50,49 @@
 </template>
 
 <script>
-  export default {
-    name: 'chatPage',
-    cryptoKey: {},
-    data() {
-      return {
-        array: [],
-        otherPublicKey: null,
-        userId: sessionStorage.getItem('userId'),
-        chatId: sessionStorage.getItem('chatId'),
+export default {
+  name: 'chatPage',
+  cryptoKey: {},
+  data() {
+    return {
+      array: [],
+      otherPublicKey: '',
+      userId: sessionStorage.getItem('userId'),
+      chatId: sessionStorage.getItem('chatId'),
+    }
+  },
+  mounted() {
+    this.getChatType(this.chatId);
+    this.getChatLog();
+    this.delay(30);
+  },
+  destroyed() {
+    if (this.webSocket.readyState === WebSocket.OPEN) {
+      this.webSocket.close();
+      this.webSocket = null;
+    }
+    sessionStorage.setItem("isHelpline", "false");
+  },
+  methods: {
+    /* global BigInt */
+    getChatType: function (chatId) {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
+        sessionStorage.setItem('chatType', responseData.chatType);
+      })
+    },
+    formulatePrivateKey: function (otherPublicKey, secret) {
+      return (BigInt(otherPublicKey) ** BigInt(secret)) % BigInt("32317006071311007300338913926423828248817941241140239112842009751400741706634354222619689417363569347117901737909704191754605873209195028853758986185622153212175412514901774520270235796078236248884246189477587641105928646099411723245426622522193230540919037680524235519125679715870117001058055877651038861847280257976054903569732561526167081339361799541336476559160368317896729073178384589680639671900977202194168647225871031411336429319536193471636533209717077448227988588565369208645296636077250268955505928362751121174096972998068410554359584866583291642136218231078990999448652468262416972035911852507045361090559");
+    },
+    getSecret: function () {
+      return BigInt(sessionStorage.getItem("secret"));
+    },
+    importCryptoKey: async function (value) {
+      let key = this.formulatePrivateKey(value, this.getSecret());
+      let bufferOne = new TextEncoder().encode(key);
+      let bufferTwo = new Uint8Array(32);
+      for (let i = 0; i < bufferTwo.length; i++) {
+        bufferTwo[i] = bufferOne[i];
       }
-    },
-    mounted() {
-      this.getChatType(sessionStorage.getItem('chatId'));
-      this.getChatLog();
-      this.delay(30);
-    },
-    destroyed() {
-      if (this.webSocket.readyState === WebSocket.OPEN) {
-        this.webSocket.close();
-        this.webSocket = null;
-      }
-      sessionStorage.setItem("isHelpline", "false");
-    },
-    methods: {
-      /* global BigInt */
-      getChatType: function (chatId) {
-        this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
-          sessionStorage.setItem('chatType', responseData.chatType);
-        })
-      },
-      formulatePrivateKey: function (otherPublicKey, secret) {
-        return (BigInt(otherPublicKey) ** BigInt(secret)) % BigInt("32317006071311007300338913926423828248817941241140239112842009751400741706634354222619689417363569347117901737909704191754605873209195028853758986185622153212175412514901774520270235796078236248884246189477587641105928646099411723245426622522193230540919037680524235519125679715870117001058055877651038861847280257976054903569732561526167081339361799541336476559160368317896729073178384589680639671900977202194168647225871031411336429319536193471636533209717077448227988588565369208645296636077250268955505928362751121174096972998068410554359584866583291642136218231078990999448652468262416972035911852507045361090559");
-      },
-      getSecret: function () {
-        return BigInt(sessionStorage.getItem("secret"));
-      },
-      importCryptoKey: async function (value) {
-        let key = this.formulatePrivateKey(value, this.getSecret());
-        let bufferOne = new TextEncoder().encode(key);
-        let bufferTwo = new Uint8Array(32);
-        for (let i = 0; i < bufferTwo.length; i++) {
-          bufferTwo[i] = bufferOne[i];
-        }
 
         this.cryptoKey = await window.crypto.subtle.importKey(
             "raw",
@@ -274,44 +274,44 @@
           webSocket.send(messageAndIv);
         }
 
-        document.getElementById('message').classList.remove("border", "border-danger");
-        document.getElementById('message').value = '';
-      },
-      sendMessage: function (encryptedMessage) {
-        this.scrollToBottom();
-        this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + this.userId + '/'+ this.chatId, encryptedMessage).then(res => { return res; })
-      },
-      sendHttpRequest: function (method, url, data) {
-        return new Promise((resolve, reject) => {
-          const XmlHttpRequest = new XMLHttpRequest();
-          XmlHttpRequest.open(method, url);
-          XmlHttpRequest.responseType = 'json';
-          XmlHttpRequest.setRequestHeader('Content-Type', 'application/json');
-          XmlHttpRequest.onload = () => {
-            if (XmlHttpRequest.status >= 400) {
-              reject(XmlHttpRequest.response);
-            } else {
-              resolve(XmlHttpRequest.response);
-            }
-          };
-          XmlHttpRequest.send(JSON.stringify(data));
-        });
-      },
-      validateSession: function (){
-        if (!sessionStorage.getItem("userId")){
-          window.location.href = "/";
-        }
-      },
-      getCurrentTime: function () {
-        let date = new Date();
-        return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
-      },
-      scrollToBottom: function (){
-        const element = document.getElementById('messages');
-        element.scrollTop = element.scrollHeight;
-      },
-    }
+      document.getElementById('message').classList.remove("border", "border-danger");
+      document.getElementById('message').value = '';
+    },
+    sendMessage: function (encryptedMessage) {
+      this.scrollToBottom();
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/chats/' + this.userId + '/'+ this.chatId, encryptedMessage).then(res => { return res; })
+    },
+    sendHttpRequest: function (method, url, data) {
+      return new Promise((resolve, reject) => {
+        const XmlHttpRequest = new XMLHttpRequest();
+        XmlHttpRequest.open(method, url);
+        XmlHttpRequest.responseType = 'json';
+        XmlHttpRequest.setRequestHeader('Content-Type', 'application/json');
+        XmlHttpRequest.onload = () => {
+          if (XmlHttpRequest.status >= 400) {
+            reject(XmlHttpRequest.response);
+          } else {
+            resolve(XmlHttpRequest.response);
+          }
+        };
+        XmlHttpRequest.send(JSON.stringify(data));
+      });
+    },
+    validateSession: function (){
+      if (!this.userId){
+        window.location.href = "/";
+      }
+    },
+    getCurrentTime: function () {
+      let date = new Date();
+      return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+    },
+    scrollToBottom: function (){
+      const element = document.getElementById('messages');
+      element.scrollTop = element.scrollHeight;
+    },
   }
+}
 </script>
 
 <style scoped>

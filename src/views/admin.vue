@@ -58,6 +58,7 @@ export default {
       array: [],
       announcement: "",
       endDate:"",
+      userId: sessionStorage.getItem('userId')
     }
   },
   mounted() {
@@ -69,9 +70,9 @@ export default {
     savePublicKey: function (){
       let secret = sessionStorage.getItem('secret')
       let publicKey = this.formulatePublicKey(secret).toString();
-      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/security/' + sessionStorage.getItem('userId') + '/' + String(publicKey)).then(responseData => {
+      this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/security/' + this.userId + '/' + String(publicKey)).then(responseData => {
         let keysMatch = responseData.keysMatch;
-        if (!keysMatch || sessionStorage.getItem('userId') !== 'Admin'){
+        if (!keysMatch || this.userId !== 'Admin'){
           history.back();
         }
       })
@@ -91,7 +92,7 @@ export default {
       this.sendHttpRequest('POST', 'http://localhost:8080/chatapplication/announcement/' + announcement + '/' + endDate).then(() => {window.location.reload();})
     },
     showAnnouncementMaker: function (){
-      return sessionStorage.getItem("userId") === "Admin";
+      return this.userId === "Admin";
     },
     setChatId: function (chatId){
       this.setHelpline();
