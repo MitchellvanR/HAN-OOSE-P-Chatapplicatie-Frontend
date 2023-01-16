@@ -32,7 +32,7 @@
               </form>
             </div>
             <div class="row">
-              <div class="form-popup" id="addUserToCurrentChat">
+              <div class="display-none" id="addUserToCurrentChat">
                 <form id="addUserForm" class="row">
                   <div class="col-lg-12">
                     <input type="text" id="userId" placeholder="Gebruiker toevoegen (userId)">
@@ -51,7 +51,7 @@
 
 <script>
 export default {
-  name: 'OpenChat',
+  name: 'chatPage',
   cryptoKey: {},
   data() {
     return {
@@ -59,10 +59,12 @@ export default {
       otherPublicKey: '',
       userId: sessionStorage.getItem('userId'),
       chatId: sessionStorage.getItem('chatId'),
+      usersInChat: sessionStorage.getItem('usersInChat')
     }
   },
   mounted() {
-    this.getChatType(sessionStorage.getItem('chatId'));
+    this.getChatUsers();
+    this.getChatType();
     this.getChatLog();
     this.delay(30);
   },
@@ -75,9 +77,9 @@ export default {
   },
   methods: {
     /* global BigInt */
-    getChatType: function (chatId) {
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + chatId).then(responseData => {
-        sessionStorage.setItem('chatType', responseData.chatType);
+    getChatType: function () {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/getChatType/' + sessionStorage.getItem('chatId')).then(responseData => {
+        this.chatType = responseData.chatType;
       })
     },
     formulatePrivateKey: function (otherPublicKey, secret) {
@@ -94,57 +96,57 @@ export default {
         bufferTwo[i] = bufferOne[i];
       }
 
-      this.cryptoKey = await window.crypto.subtle.importKey(
-          "raw",
-          bufferTwo,
-          "AES-CBC",
-          false,
-          ["encrypt", "decrypt"]
-      );
-    },
-    generateIv: function () {
-      return window.crypto.getRandomValues(new Uint8Array(16));
-    },
-    encodeMessage: function (message) {
-      return new TextEncoder().encode(message);
-    },
-    decodeMessage: function (message) {
-      return new TextDecoder().decode(message);
-    },
-    encrypt: async function (message) {
-      this.getOtherPublicKey();
-      await this.delay(30);
-      await this.importCryptoKey(this.otherPublicKey);
-      let iv = this.generateIv();
-      sessionStorage.setItem("sendIv", iv.toString());
-      let encodedMessage = this.encodeMessage(message);
-      return window.crypto.subtle.encrypt(
-          {
-            name: "AES-CBC",
-            iv: iv,
-          },
-          this.cryptoKey,
-          encodedMessage
-      );
-    },
-    cleanForDecrypt: function (message) {
-      let cleanMessage = message.replace(/['"]/g, '');
-      if (cleanMessage.charCodeAt(0) === 123) {
-        cleanMessage = cleanMessage.substring(1, cleanMessage.length - 1);
-      }
-      let messageArray = cleanMessage.split(",");
-      for (let i = 0; i < messageArray.length; i++) {
-        messageArray[i] = messageArray[i].replace(String(i) + ":", '');
-      }
-      let correctArray = new Uint8Array(messageArray.length);
-      for (let i = 0; i < correctArray.length; i++) {
-        correctArray[i] = messageArray[i];
-      }
-      return correctArray;
-    },
-    decrypt: async function (key, message, iv) {
-      let messageArray = this.cleanForDecrypt(message);
-      let ivArray = this.cleanForDecrypt(iv);
+        this.cryptoKey = await window.crypto.subtle.importKey(
+            "raw",
+            bufferTwo,
+            "AES-CBC",
+            false,
+            ["encrypt", "decrypt"]
+        );
+      },
+      generateIv: function () {
+        return window.crypto.getRandomValues(new Uint8Array(16));
+      },
+      encodeMessage: function (message) {
+        return new TextEncoder().encode(message);
+      },
+      decodeMessage: function (message) {
+        return new TextDecoder().decode(message);
+      },
+      encrypt: async function (message) {
+        this.getOtherPublicKey();
+        await this.delay(30);
+        await this.importCryptoKey(this.otherPublicKey);
+        let iv = this.generateIv();
+        sessionStorage.setItem("sendIv", iv.toString());
+        let encodedMessage = this.encodeMessage(message);
+        return window.crypto.subtle.encrypt(
+            {
+              name: "AES-CBC",
+              iv: iv,
+            },
+            this.cryptoKey,
+            encodedMessage
+        );
+      },
+      cleanForDecrypt: function (message) {
+        let cleanMessage = message.replace(/['"]/g, '');
+        if (cleanMessage.charCodeAt(0) === 123) {
+          cleanMessage = cleanMessage.substring(1, cleanMessage.length - 1);
+        }
+        let messageArray = cleanMessage.split(",");
+        for (let i = 0; i < messageArray.length; i++) {
+          messageArray[i] = messageArray[i].replace(String(i) + ":", '');
+        }
+        let correctArray = new Uint8Array(messageArray.length);
+        for (let i = 0; i < correctArray.length; i++) {
+          correctArray[i] = messageArray[i];
+        }
+        return correctArray;
+      },
+      decrypt: async function (key, message, iv) {
+        let messageArray = this.cleanForDecrypt(message);
+        let ivArray = this.cleanForDecrypt(iv);
 
       let encodedMessage = await window.crypto.subtle.decrypt(
           {
@@ -171,22 +173,34 @@ export default {
         setTimeout(resolve, milliseconds);
       });
     },
+    getChatUsers: function () {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/users/' + this.chatId).then(res => {
+        let usersInChat = []
+        for (let i = 0; i < res.users.length; i++) {
+          usersInChat.push(res.users[i].id);
+        }
+        sessionStorage.setItem('usersInChat', usersInChat);
+        this.usersInChat = usersInChat;
+        this.runWebSocket();
+      })
+    },
     getChatLog: async function () {
       this.helpLineRemoveGroupChats()
-      this.runWebSocket();
       this.validateSession();
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + sessionStorage.getItem('chatId')).then(async responseData => {
         for (let message of responseData.messages) {
-          this.getOtherPublicKey()
-          await this.delay(30);
-          await this.importCryptoKey(this.otherPublicKey);
-          message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
+          if (this.chatType !== "group") {
+            this.getOtherPublicKey()
+            await this.delay(30);
+            await this.importCryptoKey(this.otherPublicKey);
+            message.message = await this.decrypt(this.cryptoKey, message.message, message.iv);
+          }
         }
         this.array.push(...responseData.messages);
       }).then(() => this.scrollToBottom());
     },
     toggleView: function (id) {
-      document.getElementById(id).classList.toggle("form-popup");
+      document.getElementById(id).classList.toggle("display-none");
     },
     helpLineRemoveGroupChats: function (){
       if (sessionStorage.getItem("isHelpline") === "true"){
@@ -194,10 +208,10 @@ export default {
       }
     },
     runWebSocket: function () {
-      this.webSocket = new WebSocket('ws://localhost:443');
+      this.webSocket = new WebSocket('ws://localhost:443/?id=' + this.userId + '&chatId=' + this.chatId + '&users=' + this.usersInChat);
 
       this.webSocket.addEventListener('message', async data => {
-        if (sessionStorage.getItem('chatType') === "groep") {
+        if (this.chatType === "group") {
           data.data.text().then(this.showMessage);
         } else {
           this.getOtherPublicKey();
@@ -208,33 +222,33 @@ export default {
         }
       });
 
-      document.getElementById('sendMessageForm').onsubmit = data => {
-        const input = document.getElementById('message');
-        input.classList.remove("border", "border-danger");
-        data.preventDefault();
+        document.getElementById('sendMessageForm').onsubmit = data => {
+          const input = document.getElementById('message');
+          input.classList.remove("border", "border-danger");
+          data.preventDefault();
 
-        if (this.isInputEmpty()) {
-          return document.getElementById('message').classList.add("border", "border-danger");
+          if (this.isInputEmpty()) {
+            return document.getElementById('message').classList.add("border", "border-danger");
+          }
+          this.handleMessage(this.webSocket);
         }
-        this.handleMessage(this.webSocket);
-      }
-    },
-    showMessage: function (message) {
-        this.array.push({
-          message: message,
-          time: this.getCurrentTime()
-        });
-    },
-    addUserToCurrentChat: function () {
-      const input = document.getElementById('userId');
-      input.classList.remove("border", "border-danger");
+      },
+      showMessage: function (message) {
+          this.array.push({
+            message: message,
+            time: this.getCurrentTime()
+          });
+      },
+      addUserToCurrentChat: function () {
+        const input = document.getElementById('userId');
+        input.classList.remove("border", "border-danger");
 
-      if (input.value === "" || isNaN(input.value) || input.value !== this.userId){
-        input.classList.add("border", "border-danger");
-      } else {
-        this.addUserToChat(input, input.value, this.chatId);
-        input.value = '';
-      }
+        if (input.value === "" || isNaN(input.value) || input.value === this.userId){
+          input.classList.add("border", "border-danger");
+        } else {
+          this.addUserToChat(input, input.value, this.chatId);
+          input.value = '';
+        }
     },
     getOtherPublicKey: function (){
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/security/' + this.userId + '/getOtherKey/' + this.chatId).then(responseData => {
@@ -266,9 +280,9 @@ export default {
         time: this.getCurrentTime()
       });
 
-      if (sessionStorage.getItem('chatType') === "groep") {
+      if (this.chatType === "group") {
         this.sendMessage(groupMessageAndIv);
-        webSocket.send(groupMessageAndIv);
+        webSocket.send(message);
       } else {
         this.sendMessage(messageAndIv);
         webSocket.send(messageAndIv);
@@ -298,7 +312,7 @@ export default {
       });
     },
     validateSession: function (){
-      if (!sessionStorage.getItem("userId")){
+      if (!this.userId){
         window.location.href = "/";
       }
     },
@@ -315,29 +329,21 @@ export default {
 </script>
 
 <style scoped>
-/* ===== Scrollbar CSS ===== */
 /* Firefox */
 * {
   scrollbar-width: thin;
   scrollbar-color: #000000 #e6eaea;
 }
-
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
   width: 16px;
 }
-
 *::-webkit-scrollbar-track {
   background: #e6eaea;
 }
-
 *::-webkit-scrollbar-thumb {
   background-color: #000000;
   border-radius: 10px;
   border: 3px solid #e6eaea;
-}
-
-.display-none {
-  display: none;
 }
 </style>
