@@ -62,7 +62,7 @@ export default {
     }
   },
   mounted() {
-    this.getChatType(sessionStorage.getItem('chatId'));
+    this.getChatType(this.chatId);
     this.getChatLog();
     this.delay(30);
   },
@@ -298,7 +298,7 @@ export default {
       });
     },
     validateSession: function (){
-      if (!sessionStorage.getItem("userId")){
+      if (!this.userId){
         window.location.href = "/";
       }
     },

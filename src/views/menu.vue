@@ -121,7 +121,7 @@ export default {
         input.classList.remove("border", "border-danger");
 
         data.preventDefault();
-        if (input.value === "" || isNaN(input.value) || input.value === sessionStorage.getItem("userId")){
+        if (input.value === "" || isNaN(input.value) || input.value === this.userId){
           input.classList.add("border", "border-danger");
         } else {
           this.validateUserExists(input, input.value)
@@ -139,7 +139,7 @@ export default {
       });
     },
     validateCreatedChatDoesntExist: function (input, id){
-      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + id + '/' + sessionStorage.getItem('userId')).then(responseData => {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/newChat/' + id + '/' + this.userId).then(responseData => {
         if (responseData.result === false){
           this.addChatToDatabase(id);
           this.chats.push({
