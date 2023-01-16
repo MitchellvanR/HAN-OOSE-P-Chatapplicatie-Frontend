@@ -59,9 +59,11 @@ export default {
       otherPublicKey: '',
       userId: sessionStorage.getItem('userId'),
       chatId: sessionStorage.getItem('chatId'),
+      usersInChat: sessionStorage.getItem('usersInChat')
     }
   },
   mounted() {
+    this.getChatUsers();
     this.getChatType(sessionStorage.getItem('chatId'));
     this.getChatLog();
     this.delay(30);
@@ -171,9 +173,19 @@ export default {
         setTimeout(resolve, milliseconds);
       });
     },
+    getChatUsers: function () {
+      this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/users/' + this.chatId).then(res => {
+        let usersInChat = []
+        for (let i = 0; i < res.users.length; i++) {
+          usersInChat.push(res.users[i].id);
+        }
+        sessionStorage.setItem('usersInChat', usersInChat);
+        this.usersInChat = usersInChat;
+        this.runWebSocket();
+      })
+    },
     getChatLog: async function () {
       this.helpLineRemoveGroupChats()
-      this.runWebSocket();
       this.validateSession();
       this.sendHttpRequest('GET', 'http://localhost:8080/chatapplication/chats/' + this.chatId).then(async responseData => {
         for (let message of responseData.messages) {
@@ -194,7 +206,7 @@ export default {
       }
     },
     runWebSocket: function () {
-      this.webSocket = new WebSocket('ws://localhost:443');
+      this.webSocket = new WebSocket('ws://localhost:443/?id=' + this.userId + '&chatId=' + this.chatId + '&users=' + this.usersInChat);
 
       this.webSocket.addEventListener('message', async data => {
         if (sessionStorage.getItem('chatType') === "groep") {
@@ -265,7 +277,6 @@ export default {
         senderId: this.userId,
         time: this.getCurrentTime()
       });
-
       if (sessionStorage.getItem('chatType') === "groep") {
         this.sendMessage(groupMessageAndIv);
         webSocket.send(groupMessageAndIv);
